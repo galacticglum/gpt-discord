@@ -18,7 +18,6 @@ class Client(discord.Client):
         - limit: The maximum number of messages to get. If None, gets all.
         - output_filepath: The output JSON filepath. Defaults to "./messages.json".
     """
-
     def __init__(self, server_id: int, channel_id: int, limit: Optional[int] = None,
                  output_filepath: Optional[Path] = None) -> None:
         """Initialise the Client with the given server and channel ids."""
