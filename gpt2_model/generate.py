@@ -240,7 +240,10 @@ def main():
             json.dump(results, output_file, indent=args.indent_json)
 
     if args.print_results:
-        print(results)
+        for i, x in enumerate(results):
+            groups = results[i]['groups']
+            username, message = groups['username'], groups['message']
+            print(f'({i + 1})\t{username}: {message}')
 
     if args.show_profile:
         print('##### Profile Results #####')
