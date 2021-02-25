@@ -21,6 +21,7 @@ def _set_selector_event_loop_policy() -> None:
     except Exception as exception:
         print(f'Failed to set selector event loop policy! {exception}')
 
+
 async def _history_iterator(history: discord.iterators.HistoryIterator) \
         -> AsyncGenerator[discord.Message, None]:
     """Iterate over a channel history, while silently handling exceptions."""
@@ -32,6 +33,7 @@ async def _history_iterator(history: discord.iterators.HistoryIterator) \
             break
         except Exception as exception:
             print(exception)
+
 
 class Client(discord.Client):
     """
