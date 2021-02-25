@@ -243,7 +243,7 @@ def main():
         for i, x in enumerate(results):
             groups = results[i]['groups']
             username, message = groups['username'], groups['message']
-            print(f'({i + 1})\t{username}: {message}')
+            print(f'({i + 1}). {username}: {message}')
 
     if args.show_profile:
         print('##### Profile Results #####')
