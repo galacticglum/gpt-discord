@@ -1,4 +1,5 @@
 """Makes a corpus of Discord messages, mapped by username."""
+import re
 import json
 import argparse
 from pathlib import Path
@@ -9,6 +10,15 @@ from discord.utils import escape_markdown
 BOS_TOKEN = '<bos>'
 EOS_TOKEN = '<eos>'
 SEPARATOR_TOKEN = '<sep>'
+
+# A Regex pattern to match urls starting with or without http(s).
+URL_MATCH_PATTERN = re.compile(
+    r'(?i)(https?:\/\/(?:www\.|(?!www))'
+    r'[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|'
+    r'www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|'
+    r'https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|'
+    r'www\.[a-zA-Z0-9]+\.[^\s]{2,})'
+)
 
 
 def main(args: argparse.Namespace) -> None:
@@ -33,7 +43,13 @@ def main(args: argparse.Namespace) -> None:
             if args.ignore_bots and message['author'].get('bot', False):
                 # Ignore bot messages
                 continue
-            if not message.get('clean_content', None):
+
+            content = message.get('clean_content', '')
+            if args.remove_links:
+                content = re.sub(URL_MATCH_PATTERN, '', content)
+            # Remove leading and trailing whitespace
+            content = content.strip()
+            if not content:
                 # Skip empty messages
                 continue
 
@@ -41,7 +57,7 @@ def main(args: argparse.Namespace) -> None:
                 args.start_token,
                 message['author']['username'],
                 args.separator_token,
-                escape_markdown(message['clean_content']),
+                escape_markdown(content),
                 args.end_token
             ).encode('unicode_escape') + b'\n'
             output_file.write(sample)
@@ -66,4 +82,6 @@ if __name__ == '__main__':
                         help='Whether to sort by post time.')
     parser.add_argument('--ignore-bots', dest='ignore_bots', action='store_true',
                         help='Whether to ignore messages made by bots.')
+    parser.add_argument('--remove-links', dest='remove_links', action='store_true',
+                        help='Whether to remove links from messages.')
     main(parser.parse_args())
