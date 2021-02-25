@@ -92,7 +92,8 @@ class Client(discord.Client):
                         'author': {
                             'id': message.author.id,
                             'username': message.author.name,
-                            'display_name': message.author.display_name
+                            'display_name': message.author.display_name,
+                            'bot': message.author.bot
                         },
                         'content': message.content,
                         'clean_content': message.clean_content,

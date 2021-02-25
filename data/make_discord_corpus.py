@@ -30,6 +30,9 @@ def main(args: argparse.Namespace) -> None:
 
     with open(args.output_file, 'wb+') as output_file:
         for message in tqdm(messages):
+            if args.ignore_bots and message['author'].get('bot', False):
+                # Ignore bot messages
+                continue
             if not message.get('clean_content', None):
                 # Skip empty messages
                 continue
@@ -61,4 +64,6 @@ if __name__ == '__main__':
                         help='The end EOS (end of sentence) token. Defaults to \'<eos>\'.')
     parser.add_argument('--sort', dest='sort_by_time', action='store_true',
                         help='Whether to sort by post time.')
+    parser.add_argument('--ignore-bots', dest='ignore_bots', action='store_true',
+                        help='Whether to ignore messages made by bots.')
     main(parser.parse_args())
