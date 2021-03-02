@@ -131,7 +131,8 @@ class Persona:
         }
 
 
-def load_messages(file: Path, remove_links: bool = False) -> Union[List[Message], Dict[int, List[Message]]]:
+def load_messages(file: Path, remove_links: bool = False, skip_empty: bool = True) \
+        -> Union[List[Message], Dict[int, List[Message]]]:
     """Return the messages containined in the given json file.
 
     If the root level object is a list, then a list of messages is returned.
@@ -142,12 +143,19 @@ def load_messages(file: Path, remove_links: bool = False) -> Union[List[Message]
     """
     def _messages_to_obj(raw_messages: List[dict]) -> List[Message]:
         """Return a list of message objects."""
+        _filter_func = lambda x: re.sub(URL_MATCH_PATTERN, '', x).strip()
+
         result = []
         for raw_message in raw_messages:
             if remove_links:
                 # Remove links from the content and clean_content attributes
-                raw_message['content'] = re.sub(URL_MATCH_PATTERN, '', raw_message['content'])
-                raw_message['clean_content'] = re.sub(URL_MATCH_PATTERN, '', raw_message['clean_content'])
+                raw_message['content'] = _filter_func(raw_message['content'])
+                raw_message['clean_content'] = _filter_func(raw_message['clean_content'])
+
+            # Skip empty messages
+            if skip_empty and (not raw_message['content'] or not raw_message['clean_content']):
+                continue
+
             result.append(Message.from_dict(raw_message))
         return result
 
@@ -192,13 +200,15 @@ def main(args: argparse.Namespace) -> None:
         user_message_count = get_user_message_count(channel_messages)
         for user, message_count in user_message_count.items():
             # Skip this user if they don't match the message count threshold,
-            # or if there already exists an entry for this user!
-            if message_count < args.persona_message_threshold or user in personas:
+            # or if there already exists an entry for this user,
+            # or if there user is a bot!
+            if message_count < args.persona_message_threshold \
+               or user in personas or user.is_bot and args.ignore_bots:
                 continue
             personas[user] = Persona(user)
 
         for i, message in enumerate(channel_messages):
-            # Skip this message if we aren't making a persona for the user.
+            # Skip this message if we aren't making a persona for the user
             if message.author not in personas:
                 continue
 
