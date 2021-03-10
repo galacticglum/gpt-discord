@@ -91,9 +91,11 @@ class Sample:
     Instance Attributes:
         - groups: A dict mapping the name of each capture group to its data.
         - raw_text: The raw output of the model (containing all special tokens).
+        - tokens: The tokens outputted by the model.
     """
     groups: Dict[str, str]
     raw_text: str
+    tokens: list
 
 
 def generate(model: PreTrainedModel, tokenizer: PreTrainedTokenizer, prompt: Optional[str] = None,
@@ -187,7 +189,8 @@ def generate(model: PreTrainedModel, tokenizer: PreTrainedTokenizer, prompt: Opt
         for i in range(output.size()[0]):
             if len(results) >= samples:
                 break
-            raw_text = tokenizer.decode(output[i, :].tolist())
+            tokens = output[i, :].tolist()
+            raw_text = tokenizer.decode(tokens)
             match = strict_regex_mapping.match(raw_text)
             if not match:
                 continue
@@ -203,5 +206,5 @@ def generate(model: PreTrainedModel, tokenizer: PreTrainedTokenizer, prompt: Opt
                 if groups_id in visited:
                     continue
                 visited.add(groups_id)
-            results.append(Sample(groups, raw_text))
+            results.append(Sample(groups, raw_text, tokens))
         return results
