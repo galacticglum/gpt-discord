@@ -36,8 +36,7 @@ async def _history_iterator(history: discord.iterators.HistoryIterator) \
 
 
 class Client(discord.Client):
-    """
-    A discord.Client implementation for retrieving messages from a server.
+    """A discord.Client implementation for retrieving messages from a server.
 
     Instance Attributes:
         - server_id: The id of the server containing the target channel.
