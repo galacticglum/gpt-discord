@@ -129,41 +129,38 @@ class Client(discord.Client):
             self._history_buffers[channel_id] = collections.deque(maxlen=self.history_buffer_size)
         self._history_buffers[channel_id].append(message)
 
-        max_length = max(len(prompt), 128)
-        sample = generate(
-            self._model,
-            self._tokenizer,
-            prompt,
-            max_length=max_length,
-            # TODO: Vary temperature
-            temperature=0.7
-        )[0]
+        async with message.channel.typing():
+            max_length = max(len(prompt), 128)
+            sample = generate(
+                self._model,
+                self._tokenizer,
+                prompt,
+                max_length=max_length,
+                # TODO: Vary temperature
+                temperature=1.0
+            )[0]
 
-        tail_message = sample.raw_text[sample.raw_text.rfind(self._tokenizer.bos_token):]
+            tail_message = sample.raw_text[sample.raw_text.rfind(self._tokenizer.bos_token):]
 
-        match = self._decode_regex.match(tail_message)
-        if not match:
-            return
+            match = self._decode_regex.match(tail_message)
+            if not match:
+                return
 
-        groups = {
-            'username': match.group('username'),
-            'message': match.group('message')
-        }
+            groups = {
+                'username': match.group('username'),
+                'message': match.group('message')
+            }
 
-        if any(value is None for value in groups.values()):
-            return
+            if any(value is None for value in groups.values()):
+                return
 
-        await message.channel.send(groups['message'])
+            await asyncio.sleep(random.randint(15, 60))
+            unescaped = groups['message'].encode('utf-8').decode('unicode_escape')
+            await message.channel.send(unescaped)
 
 
 def main(args: argparse.Namespace) -> None:
     """Main entrypoint for the script."""
-    # Load credentials
-    with open(args.credentials_filepath, 'r') as credentials_file:
-        credentials = json.load(credentials_file)
-        token = credentials.get('token', None)
-        is_bot = credentials.get('bot', True)
-
     if args.config_filepath is not None:
         with open(args.config_filepath, 'r') as config_file:
             config = json.load(config_file)
@@ -186,6 +183,16 @@ def main(args: argparse.Namespace) -> None:
                          'the --model-checkpoint flag in the command-line, or double check '
                          'your configuration file.')
 
+    if args.credentials_filepath is None:
+        # Use the persona username to get a default credentials_filepath
+        args.credentials_filepath = str(Path(f'instance/chat_bot/{args.persona_username}_credentials.json'))
+
+    # Load credentials
+    with open(args.credentials_filepath, 'r') as credentials_file:
+        credentials = json.load(credentials_file)
+        token = credentials.get('token', None)
+        is_bot = credentials.get('bot', True)
+
     # Set the event loop policy to selector on windows systems to avoid asyncio runtime errors.
     _set_selector_event_loop_policy()
     client = Client(args.channels,
@@ -205,7 +212,7 @@ def main(args: argparse.Namespace) -> None:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='A discord chat bot that uses a GPT2 model '
                                                  'for message generation.')
-    parser.add_argument('credentials_filepath', type=Path,
+    parser.add_argument('--credentials-filepath', type=Path, default=None,
                         help='The path to the JSON file containing the Discord client credentials.')
     parser.add_argument('--channels', nargs='+', help='The ids of the channels to talk in.',
                         type=int, default=None)
